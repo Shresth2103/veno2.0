@@ -133,6 +133,8 @@ const getPendingCheckpoint = async (teamId) => {
       roomNumber: true,
       status: true,
       isSnakePosition: true,
+      isLadderPosition: true,
+      ladderEndPos: true,
       createdAt: true,
       questionAssign: {
         select: {
@@ -146,6 +148,7 @@ const getPendingCheckpoint = async (teamId) => {
               type: true,
               options: true,
               isSnakeQuestion: true,
+              isLadderQuestion: true,
             },
           },
         },
@@ -177,6 +180,8 @@ const getPendingCheckpoint = async (teamId) => {
       roomNumber: true,
       status: true,
       isSnakePosition: true,
+      isLadderPosition: true,
+      ladderEndPos: true,
       createdAt: true,
       questionAssign: true,
     },
@@ -319,22 +324,16 @@ const submitAnswer = async (teamId, assignmentId, answer) => {
       },
     }),
 
-    // Update team points if auto-marked
+    // Update team points and unlock dice if auto-marked (manual questions wait for admin marking)
     ...(isAutoMarked ? [
       prisma.team.update({
         where: { id: teamId },
         data: {
           points: { increment: pointsChange },
-          canRollDice: true, // Unlock dice
+          canRollDice: true, // Unlock dice for auto-marked
         },
       })
-    ] : [
-      // Just unlock dice if not auto-marked
-      prisma.team.update({
-        where: { id: teamId },
-        data: { canRollDice: true },
-      })
-    ]),
+    ] : []),
 
     // Approve the checkpoint
     prisma.checkpoint.update({

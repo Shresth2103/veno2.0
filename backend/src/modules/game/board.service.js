@@ -37,12 +37,13 @@ const deleteBoardMap = async (mapId) => {
   });
 };
 
-const createBoardRule = async (mapId, type, startPos) => {
+const createBoardRule = async (mapId, type, startPos, endPos = null) => {
   return await prisma.boardRule.create({
     data: {
       mapId,
       type,
       startPos,
+      endPos,
     },
   });
 };
@@ -114,6 +115,40 @@ const checkSnakeAtPosition = async (position) => {
   return snake;
 };
 
+// ==================== TEAM-SPECIFIC LADDER CHECKS ====================
+
+const checkLadderForTeam = async (teamId, position) => {
+  // Try to get from cache first
+  const cached = boardStateCache.get(teamId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    const ladder = cached.data.ladders
+      ? cached.data.ladders.find(l => l.start === position)
+      : null;
+    return ladder ? { startPos: position, endPos: ladder.end, type: 'LADDER' } : null;
+  }
+
+  // Fetch team's mapId only
+  const team = await prisma.team.findUnique({
+    where: { id: teamId },
+    select: { mapId: true },
+  });
+
+  if (!team || !team.mapId) {
+    return null;
+  }
+
+  // Check if position has a ladder
+  const ladder = await prisma.boardRule.findFirst({
+    where: {
+      mapId: team.mapId,
+      type: 'LADDER',
+      startPos: position,
+    },
+  });
+
+  return ladder;
+};
+
 // ==================== TEAM MAP ASSIGNMENT ====================
 
 const assignMapToTeam = async (teamId, mapId) => {
@@ -152,7 +187,7 @@ const getBoardStateForTeam = async (teamId) => {
     return cached.data;
   }
 
-  // Optimized query - only fetch what we need
+  // Fetch all rules (snakes and ladders)
   const team = await prisma.team.findUnique({
     where: { id: teamId },
     select: {
@@ -162,8 +197,7 @@ const getBoardStateForTeam = async (teamId) => {
           id: true,
           name: true,
           rules: {
-            where: { type: 'SNAKE' }, // Only fetch snakes
-            select: { startPos: true },
+            select: { type: true, startPos: true, endPos: true },
             orderBy: { startPos: 'asc' },
           },
         },
@@ -176,8 +210,8 @@ const getBoardStateForTeam = async (teamId) => {
       boardSize: 150,
       mapName: null,
       snakes: [],
+      ladders: [],
     };
-    // Cache even empty state to avoid repeated queries
     boardStateCache.set(teamId, { data: defaultState, timestamp: Date.now() });
     return defaultState;
   }
@@ -186,10 +220,14 @@ const getBoardStateForTeam = async (teamId) => {
     boardSize: 150,
     mapId: team.map.id,
     mapName: team.map.name,
-    snakes: team.map.rules.map(rule => rule.startPos),
+    snakes: team.map.rules
+      .filter(r => r.type === 'SNAKE')
+      .map(r => r.startPos),
+    ladders: team.map.rules
+      .filter(r => r.type === 'LADDER')
+      .map(r => ({ start: r.startPos, end: r.endPos })),
   };
 
-  // Cache the result
   boardStateCache.set(teamId, { data: boardState, timestamp: Date.now() });
 
   return boardState;
@@ -234,6 +272,7 @@ module.exports = {
   // Team-specific operations
   checkSnakeForTeam,
   checkSnakeAtPosition,
+  checkLadderForTeam,
   assignMapToTeam,
   getTeamMap,
   getBoardStateForTeam,

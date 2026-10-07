@@ -4,7 +4,7 @@ const prisma = require('../../config/db');
  * Get available questions for a team based on position type
  * Excludes questions already assigned to this team
  */
-const getAvailableQuestions = async (teamId, isSnakePosition) => {
+const getAvailableQuestions = async (teamId, isSnakePosition, isLadderPosition = false) => {
   // Get all questions already assigned to this team
   const assignedQuestions = await prisma.questionAssignment.findMany({
     where: { 
@@ -20,13 +20,18 @@ const getAvailableQuestions = async (teamId, isSnakePosition) => {
     id: { notIn: assignedQuestionIds }, // Exclude already assigned questions
   };
 
-  if (isSnakePosition) {
+  if (isLadderPosition) {
+    // Ladder position: Hard technical CODING questions with isLadderQuestion = true
+    whereClause.type = 'CODING';
+    whereClause.isLadderQuestion = true;
+  } else if (isSnakePosition) {
     // Snake position: Only CODING questions with isSnakeQuestion = true
     whereClause.type = 'CODING';
     whereClause.isSnakeQuestion = true;
   } else {
-    // Normal position: Any question type, not snake questions
+    // Normal position: Any question type, not snake or ladder questions
     whereClause.isSnakeQuestion = false;
+    whereClause.isLadderQuestion = false;
   }
 
   // Get available questions
@@ -41,19 +46,23 @@ const getAvailableQuestions = async (teamId, isSnakePosition) => {
  * Select a random question for a team
  * Returns question and determines room type needed
  */
-const selectRandomQuestion = async (teamId, isSnakePosition) => {
-  let availableQuestions = await getAvailableQuestions(teamId, isSnakePosition);
+const selectRandomQuestion = async (teamId, isSnakePosition, isLadderPosition = false) => {
+  let availableQuestions = await getAvailableQuestions(teamId, isSnakePosition, isLadderPosition);
 
   // If no questions available (all used by this team), allow reuse
   if (availableQuestions.length === 0) {
     // Get all questions matching the criteria (allow reuse)
     const whereClause = {};
     
-    if (isSnakePosition) {
+    if (isLadderPosition) {
+      whereClause.type = 'CODING';
+      whereClause.isLadderQuestion = true;
+    } else if (isSnakePosition) {
       whereClause.type = 'CODING';
       whereClause.isSnakeQuestion = true;
     } else {
       whereClause.isSnakeQuestion = false;
+      whereClause.isLadderQuestion = false;
     }
     
     availableQuestions = await prisma.question.findMany({
@@ -62,7 +71,7 @@ const selectRandomQuestion = async (teamId, isSnakePosition) => {
     
     // If still no questions found, throw error
     if (availableQuestions.length === 0) {
-      throw new Error(`No questions exist in database. Snake position: ${isSnakePosition}. Please add questions to the database.`);
+      throw new Error(`No questions exist in database. Snake position: ${isSnakePosition}, Ladder position: ${isLadderPosition}. Please add questions to the database.`);
     }
   }
 
@@ -70,7 +79,7 @@ const selectRandomQuestion = async (teamId, isSnakePosition) => {
   // 30% CODING, 70% others (NUMERICAL, MCQ, PHYSICAL)
   let selectedQuestion;
 
-  if (!isSnakePosition) {
+  if (!isSnakePosition && !isLadderPosition) {
     const codingQuestions = availableQuestions.filter(q => q.type === 'CODING');
     const otherQuestions = availableQuestions.filter(q => q.type !== 'CODING');
 
@@ -90,7 +99,7 @@ const selectRandomQuestion = async (teamId, isSnakePosition) => {
       throw new Error('No available questions');
     }
   } else {
-    // Snake position: Pick random from available snake questions
+    // Snake or Ladder position: Pick random from available questions
     selectedQuestion = availableQuestions[Math.floor(Math.random() * availableQuestions.length)];
   }
 
@@ -107,3 +116,4 @@ module.exports = {
   getAvailableQuestions,
   selectRandomQuestion,
 };
+

@@ -6,11 +6,17 @@ const { logLogin } = require('../audit/audit.service');
 
 // login for all user types (only database users)
 const login = async (username, password) => {
-  console.log('Login attempt:', { username, hasPassword: !!password });
+  const cleanUsername = username?.trim();
+  console.log('Login attempt:', { username: cleanUsername, hasPassword: !!password });
   
-  // Check database for user
-  const user = await prisma.user.findUnique({
-    where: { username },
+  // Check database for user (case-insensitive and trimmed)
+  const user = await prisma.user.findFirst({
+    where: {
+      username: {
+        equals: cleanUsername,
+        mode: 'insensitive',
+      },
+    },
     include: {
       team: {
         include: {

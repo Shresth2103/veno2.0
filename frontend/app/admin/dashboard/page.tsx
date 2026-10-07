@@ -17,6 +17,8 @@ interface Checkpoint {
   roomNumber?: string
   status: "PENDING" | "APPROVED" | "REJECTED"
   isSnakePosition?: boolean
+  isLadderPosition?: boolean
+  ladderEndPos?: number
   questionAssign?: {
     id: string
     questionId: string
@@ -428,6 +430,11 @@ export default function AdminDashboard() {
                               {checkpoint.isSnakePosition && (
                                 <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded font-medium">
                                   🐍 Snake
+                                </span>
+                              )}
+                              {checkpoint.isLadderPosition && (
+                                <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-medium">
+                                  🪜 Ladder ({checkpoint.positionAfter} → {checkpoint.ladderEndPos || '?'})
                                 </span>
                               )}
                             </span>

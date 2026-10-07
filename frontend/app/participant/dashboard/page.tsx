@@ -308,7 +308,8 @@ export default function ParticipantDashboard() {
       }
 
       // Extract floor info for display
-      const getFloor = (room: string) => {
+      const getFloor = (room?: string) => {
+        if (!room) return "";
         const match = room.match(/(\d)\d{2}$/);
         return match ? (parseInt(match[1]) === 1 ? "1st" : "2nd") : "";
       };
@@ -361,8 +362,12 @@ export default function ParticipantDashboard() {
 
       setSubmitResult(data)
       setAnswer("")
-      setGameStatus("IDLE")
-      setTeamData(prev => ({...prev, canRollDice: true}))
+      if (data?.autoMarked) {
+        setGameStatus("IDLE")
+        setTeamData(prev => ({...prev, canRollDice: true}))
+      } else {
+        setGameStatus("SOLVING")
+      }
 
       // Immediate refetch for faster feedback
       await Promise.all([fetchTeamData(), fetchTeams()])
