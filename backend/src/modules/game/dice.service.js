@@ -1,6 +1,6 @@
 const prisma = require('../../config/db');
 const {rollDice, getRandomRoom, hasReachedGoal} = require('./game.utils');
-const {checkSnakeForTeam} = require('./board.service');
+const {checkSnakeForTeam, checkLadderForTeam} = require('./board.service');
 const {selectRandomQuestion} = require('./question.assignment');
 const {GAME_CONFIG} = require('../../config/constants');
 const {logDiceRoll, logCheckpointReached} = require('../audit/audit.service');
@@ -47,16 +47,19 @@ const processDiceRoll = async (teamId) => {
   // Check if team has reached position 150 (win condition)
   const hasWon = hasReachedGoal(positionAfter);
 
-  // Parallel execution: Check snake and get checkpoint count at the same time
-  const [snake, checkpointCount] = await Promise.all([
+  // Parallel execution: Check snake, ladder, and get checkpoint count at the same time
+  const [snake, ladder, checkpointCount] = await Promise.all([
     checkSnakeForTeam(teamId, positionAfter),
+    checkLadderForTeam(teamId, positionAfter),
     prisma.checkpoint.count({where: {teamId}})
   ]);
 
   const isSnakePosition = snake !== null;
+  const isLadderPosition = ladder !== null;
+  const ladderEndPos = isLadderPosition ? ladder.endPos : null;
 
   // Automatically select question based on position type (even at position 150)
-  const {question, roomType} = await selectRandomQuestion(teamId, isSnakePosition);
+  const {question, roomType} = await selectRandomQuestion(teamId, isSnakePosition, isLadderPosition);
 
   // Get new room based on question type (TECH or NON_TECH)
   const newRoom = await getRandomRoom(team.currentRoom, teamId, roomType);
@@ -98,6 +101,8 @@ const processDiceRoll = async (teamId) => {
         roomNumber: newRoom,
         status: 'PENDING',
         isSnakePosition,
+        isLadderPosition,
+        ladderEndPos,
       },
     });
 
@@ -137,6 +142,8 @@ const processDiceRoll = async (teamId) => {
     roomAssigned: newRoom,
     roomType,
     isSnakePosition,
+    isLadderPosition,
+    ladderEndPos,
     questionType: question.type,
     questionAssigned: true,
     checkpoint,

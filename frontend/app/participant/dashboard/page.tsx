@@ -308,7 +308,8 @@ export default function ParticipantDashboard() {
       }
 
       // Extract floor info for display
-      const getFloor = (room: string) => {
+      const getFloor = (room?: string) => {
+        if (!room) return "";
         const match = room.match(/(\d)\d{2}$/);
         return match ? (parseInt(match[1]) === 1 ? "1st" : "2nd") : "";
       };
@@ -361,8 +362,12 @@ export default function ParticipantDashboard() {
 
       setSubmitResult(data)
       setAnswer("")
-      setGameStatus("IDLE")
-      setTeamData(prev => ({...prev, canRollDice: true}))
+      if (data?.autoMarked) {
+        setGameStatus("IDLE")
+        setTeamData(prev => ({...prev, canRollDice: true}))
+      } else {
+        setGameStatus("SOLVING")
+      }
 
       // Immediate refetch for faster feedback
       await Promise.all([fetchTeamData(), fetchTeams()])
@@ -479,6 +484,46 @@ export default function ParticipantDashboard() {
     );
   }
 
+  if (systemSettings.gameOver === "true") {
+    return (
+      <div className="fixed inset-0 overflow-hidden bg-black">
+        {/* Background Image */}
+        <Image
+          src="/background.svg"
+          alt="Background"
+          fill
+          priority
+          className="object-cover object-center"
+          placeholder={`data:image/svg+xml;base64,${toBase64(shimmer(1920, 1080))}`}
+        />
+
+        {/* Content overlay */}
+        <div className="absolute inset-0 z-10 flex items-center justify-center mx-16">
+          <div
+            className="flex flex-col items-center justify-center text-center w-[90vw] p-8"
+            style={{
+              borderRadius: 70,
+              background: "rgba(255,255,255,0.10)",
+              boxShadow: "0 2px 32px 0 rgba(0,0,0,0.18)",
+              border: "1px solid rgba(255,255,255,0.7)",
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            <div
+              className={`text-[7rem] font-extrabold text-[#D7CFC2] ${venom.className} tracking-tight leading-36`}
+            >
+              VENOM
+            </div>
+
+            <div className={`text-[#D1883F] ${mayak.className}`}>
+              Thank you for participating! The game is now over.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <motion.div
@@ -545,7 +590,7 @@ export default function ParticipantDashboard() {
           </DialogHeader>
           <div className="text-center space-y-3">
             <div className="text-xl font-semibold">Game Completed!</div>
-            <div>Team {teamData.teamId} has successfully reached position 150!</div>
+            <div>Team {teamData.teamId} has successfully reached position 150! Report to room AB1-010.</div>
             <div className="pt-2 text-4xl">🏆</div>
           </div>
         </DialogContent>

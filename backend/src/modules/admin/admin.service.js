@@ -151,9 +151,19 @@ const markQuestionAnswer = async (assignmentId, isCorrect, adminUsername = 'admi
     throw new Error('No answer submitted yet');
   }
 
-  // Calculate points based on snake position and answer correctness
+  // Calculate points and position based on position type and answer correctness
   let pointsChange;
-  if (assignment.checkpoint.isSnakePosition) {
+  let newPosition = assignment.checkpoint.positionAfter;
+
+  if (assignment.checkpoint.isLadderPosition) {
+    // Ladder position: correct = advance to ladder end + 1 bonus point, incorrect = stay + 0
+    if (isCorrect) {
+      newPosition = assignment.checkpoint.ladderEndPos;
+      pointsChange = 1;
+    } else {
+      pointsChange = 0;
+    }
+  } else if (assignment.checkpoint.isSnakePosition) {
     // Snake position: correct = 0, incorrect = -1
     pointsChange = isCorrect ? 0 : -1;
   } else {
@@ -176,7 +186,7 @@ const markQuestionAnswer = async (assignmentId, isCorrect, adminUsername = 'admi
     prisma.team.update({
       where: { id: assignment.checkpoint.teamId },
       data: {
-        currentPosition: assignment.checkpoint.positionAfter,
+        currentPosition: newPosition,
         currentRoom: assignment.checkpoint.roomNumber,
         points: { increment: pointsChange },
         canRollDice: true,

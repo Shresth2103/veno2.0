@@ -1,8 +1,9 @@
 "use client"
 
-import {motion} from "framer-motion"
-import {useEffect, useState} from "react"
-import {apiService} from "@/lib/service";
+import { motion } from "framer-motion"
+import { useEffect, useState } from "react"
+import { apiService } from "@/lib/service";
+import { SvgLadder, LadderData } from "./svg-ladder";
 
 interface BoardProps {
   currentPosition: number
@@ -12,19 +13,34 @@ interface BoardProps {
 const BOARD_COLS = 10
 const BOARD_ROWS = 15
 
-export function Board({currentPosition, teamId}: BoardProps) {
+// 8 default ladders with jumps between 3 and 6 positions
+const DEFAULT_LADDERS: LadderData[] = [
+  { start: 9, end: 12 },   // jump of 3 positions
+  { start: 19, end: 23 },  // jump of 4 positions
+  { start: 28, end: 34 },  // jump of 6 positions
+  { start: 39, end: 44 },  // jump of 5 positions
+  { start: 48, end: 53 },  // jump of 5 positions
+  { start: 69, end: 72 },  // jump of 3 positions
+  { start: 108, end: 112 },// jump of 4 positions
+  { start: 128, end: 134 },// jump of 6 positions
+]
+
+export function Board({ currentPosition, teamId }: BoardProps) {
   // Default snake positions if no map assigned
   const [snakeTiles, setSnakeTiles] = useState<number[]>([98, 95, 93, 87, 64, 62, 54, 17])
+  const [ladders, setLadders] = useState<LadderData[]>(DEFAULT_LADDERS)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchBoardState = async () => {
       try {
-        const {data} = await apiService.getBoard();
+        const { data } = await apiService.getBoard();
         if (data && Array.isArray(data.snakes)) {
-          setSnakeTiles(data.snakes)
-        } else {
-          console.log("No snake data or wrong format:", data)
+          const snakeNums = data.snakes.map((s: any) => (typeof s === "number" ? s : s.start));
+          setSnakeTiles(snakeNums);
+        }
+        if (data && Array.isArray(data.ladders)) {
+          setLadders(data.ladders);
         }
       } catch (error) {
         console.error("Error fetching board state:", error)
@@ -47,7 +63,7 @@ export function Board({currentPosition, teamId}: BoardProps) {
     }
   }
 
-  const tiles = Array.from({length: 150}, (_, i) => i + 1)
+  const tiles = Array.from({ length: 150 }, (_, i) => i + 1)
 
   return (
     <div className="rounded-lg bg-white border border-gray-200 p-4 sm:p-6 shadow-sm">
@@ -59,7 +75,6 @@ export function Board({currentPosition, teamId}: BoardProps) {
           {tiles.map((num) => {
             const pos = getPosition(num)
             const isSnakeTile = snakeTiles.includes(num)
-            const isCurrentPosition = currentPosition === num
 
             return (
               <g key={num}>
@@ -98,15 +113,25 @@ export function Board({currentPosition, teamId}: BoardProps) {
             )
           })}
 
+          {/* SVG Ladders */}
+          {ladders.map((ladder) => (
+            <SvgLadder
+              key={`ladder-${ladder.start}-${ladder.end}`}
+              start={ladder.start}
+              end={ladder.end}
+              getPosition={getPosition}
+            />
+          ))}
+
           {/* Current position with pulsing animation */}
           <motion.circle
             cx={getPosition(currentPosition).x * 10 + 5}
             cy={getPosition(currentPosition).y * 10 + 5}
             r={2}
             fill="oklch(0.65 0.20 280)"
-            initial={{scale: 0}}
-            animate={{scale: [1, 1.3, 1]}}
-            transition={{duration: 0.5, repeat: Number.POSITIVE_INFINITY, repeatDelay: 1}}
+            initial={{ scale: 0 }}
+            animate={{ scale: [1, 1.3, 1] }}
+            transition={{ duration: 0.5, repeat: Number.POSITIVE_INFINITY, repeatDelay: 1 }}
           />
 
           {snakeTiles.includes(currentPosition) && (
@@ -117,9 +142,9 @@ export function Board({currentPosition, teamId}: BoardProps) {
               fill="none"
               stroke="oklch(0.55 0.22 25)"
               strokeWidth={0.5}
-              initial={{scale: 1, opacity: 1}}
-              animate={{scale: 2, opacity: 0}}
-              transition={{duration: 1.5, repeat: Number.POSITIVE_INFINITY}}
+              initial={{ scale: 1, opacity: 1 }}
+              animate={{ scale: 2, opacity: 0 }}
+              transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
             />
           )}
         </svg>

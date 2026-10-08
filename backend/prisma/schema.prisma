@@ -140,6 +140,8 @@ model Checkpoint {
   status              CheckpointStatus @default(PENDING)
   isSnakePosition     Boolean          @default(false)
   snakeDodgeAttempted Boolean?
+  isLadderPosition    Boolean          @default(false)
+  ladderEndPos        Int?
 
   questionAssign QuestionAssignment?
   createdAt      DateTime            @default(now())
@@ -155,14 +157,15 @@ model Checkpoint {
 // QUESTION ENGINE
 
 model Question {
-  id              String       @id @default(uuid())
-  text            String
-  hint            String
-  isSnakeQuestion Boolean      @default(false)
-  type            QuestionType @default(CODING)
-  options         String[]     @default([])
-  correctAnswer   String?
-  isActive        Boolean      @default(true)
+  id               String       @id @default(uuid())
+  text             String
+  hint             String
+  isSnakeQuestion  Boolean      @default(false)
+  isLadderQuestion Boolean      @default(false)
+  type             QuestionType @default(CODING)
+  options          String[]     @default([])
+  correctAnswer    String?
+  isActive         Boolean      @default(true)
 
   assignments QuestionAssignment[]
 
@@ -205,6 +208,7 @@ model BoardRule {
   mapId    String
   type     BoardRuleType
   startPos Int
+  endPos   Int?
 
   map BoardMap @relation(fields: [mapId], references: [id], onDelete: Cascade)
 

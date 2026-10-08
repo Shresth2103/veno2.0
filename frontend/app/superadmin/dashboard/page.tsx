@@ -5,6 +5,7 @@ import {useRouter} from "next/navigation"
 import {Navbar} from "@/components/navbar"
 import {ROOMS} from "@/lib/constants"
 import {apiService} from "@/lib/service";
+import {Input} from "@/components/ui/input";
 
 interface Team {
   id: string
@@ -19,6 +20,7 @@ interface Team {
   disqualified: boolean
   mapId?: string
   mapName?: string
+  score: number
   checkpoints: Array<{
     id: string
     checkpointNumber: number
@@ -83,6 +85,7 @@ export default function SuperAdminDashboard() {
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
   const [generatedPasswords, setGeneratedPasswords] = useState<Record<string, string>>({})
   const [maps, setMaps] = useState<Array<{ id: string, name: string, teamsCount: number }>>([])
+  const [searchAuditQuery, setSearchAuditQuery] = useState("");
   const [roomCapacities, setRoomCapacities] = useState<Array<{
     room: string,
     currentTeams: number,
@@ -156,7 +159,7 @@ export default function SuperAdminDashboard() {
   // Fetch activity logs from backend
   const fetchActivityLogs = async () => {
     try {
-      const {data} = await apiService.fetchAuditLogs();
+      const {data} = await apiService.fetchAuditLogs(searchAuditQuery);
       for (const log of data) {
         log.timestamp = new Date(log.timestamp)
       }
@@ -181,6 +184,7 @@ export default function SuperAdminDashboard() {
       const interval = setInterval(() => {
         fetchTeams()
         fetchRoomCapacities()
+        fetchActivityLogs()
       }, 10000)
       return () => clearInterval(interval)
     }
@@ -430,10 +434,13 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  useEffect(() => {
+    fetchActivityLogs();
+  }, [searchAuditQuery]);
+
   // Calculate leaderboard - sort by points (descending), then by time (ascending)
   const leaderboard = [...teams]
     .filter((t) => !t.disqualified)
-    .sort((a, b) => b.points - a.points || a.totalTime - b.totalTime)
 
   return (
     <div className="min-h-screen bg-white relative">
@@ -499,6 +506,7 @@ export default function SuperAdminDashboard() {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Position</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Points</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Time</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Score</th>
                 </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -518,6 +526,7 @@ export default function SuperAdminDashboard() {
                       <td className="px-4 py-3 text-sm text-gray-900">{team.currentPosition}</td>
                       <td className="px-4 py-3 text-sm text-gray-900">{team.points}</td>
                       <td className="px-4 py-3 text-sm font-mono text-gray-900">{formatTime(team.totalTime)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{team.score}</td>
                     </tr>
                   )
                 })}
@@ -908,6 +917,15 @@ export default function SuperAdminDashboard() {
               </div>
             ) : (
               <div className="overflow-x-auto">
+                <div>
+                  <Input
+                    type="text"
+                    value={searchAuditQuery}
+                    onChange={(e) => setSearchAuditQuery(e.target.value)}
+                    placeholder="Search by ID"
+                    className="my-2"
+                  />
+                </div>
                 <table className="w-full">
                   <thead className="bg-gray-100">
                   <tr>
