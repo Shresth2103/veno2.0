@@ -36,13 +36,15 @@ export function StatusStrip({ currentPosition, roomNumber, status, totalTimeSec,
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`
   }
 
-  // Extract floor from room number (e.g., "AB1 201" -> "2nd Floor")
+  // Extract floor from room number (e.g., "AB1 209" -> "2nd Floor", "AB1 307" -> "3rd Floor")
   const getFloorInfo = (room: string | number) => {
     const roomStr = String(room);
     const match = roomStr.match(/(\d)\d{2}$/);
     if (match) {
       const floor = parseInt(match[1]);
-      return floor === 1 ? "1st Floor" : "2nd Floor";
+      if (floor === 2) return "2nd Floor";
+      if (floor === 3) return "3rd Floor";
+      return `${floor}th Floor`;
     }
     return "";
   };

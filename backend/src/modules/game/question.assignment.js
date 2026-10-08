@@ -69,9 +69,15 @@ const selectRandomQuestion = async (teamId, isSnakePosition, isLadderPosition = 
       where: whereClause,
     });
     
-    // If still no questions found, throw error
+    // If still no questions found, fallback to any active question
     if (availableQuestions.length === 0) {
-      throw new Error(`No questions exist in database. Snake position: ${isSnakePosition}, Ladder position: ${isLadderPosition}. Please add questions to the database.`);
+      availableQuestions = await prisma.question.findMany({
+        where: { isActive: true },
+      });
+    }
+
+    if (availableQuestions.length === 0) {
+      throw new Error(`No questions exist in database. Please add questions to the database.`);
     }
   }
 

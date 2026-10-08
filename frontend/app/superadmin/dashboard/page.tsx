@@ -143,7 +143,7 @@ export default function SuperAdminDashboard() {
         teamId: t.user?.username || t.teamCode, // Use username as TEAM ID (e.g., "TEAM001")
         members: t.members?.map((m: any) => m.name) || [],
         currentPosition: t.currentPosition || 1,
-        currentRoom: t.currentRoom || "AB1 301",
+        currentRoom: t.currentRoom || "AB1 307",
         totalTime: t.totalTimeSec || 0,
         points: t.points || 0,
         disqualified: t.status === 'DISQUALIFIED',
