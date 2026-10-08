@@ -11,6 +11,7 @@ async function seedRooms() {
     { roomNumber: 'AB1 225', capacity: 8, floor: 2, roomType: 'NON_TECH' },
   
     // FLOOR 3 
+    { roomNumber: 'AB1 307', capacity: 30, floor: 3, roomType: 'NON_TECH' },
     { roomNumber: 'AB1 311', capacity: 8, floor: 3, roomType: 'TECH' },
     { roomNumber: 'AB1 312', capacity: 7, floor: 3, roomType: 'TECH' },
     { roomNumber: 'AB1 319', capacity: 6, floor: 3, roomType: 'NON_TECH' },

@@ -92,7 +92,7 @@ async function main() {
   for (let i = 1; i <= 10; i++) {
     const teamCode = `TEAM${String(i).padStart(3, '0')}`;
     const teamName = teamNames[i - 1];
-    const assignedRoom = rooms[(i - 1) % rooms.length];
+    const assignedRoom = 'AB1 307';
     const assignedMap = allMaps.length > 0 ? allMaps[(i - 1) % allMaps.length].id : defaultMapId;
 
     // Create or update Team
@@ -100,6 +100,7 @@ async function main() {
       where: { teamCode },
       update: {
         teamName,
+        currentPosition: 1,
         currentRoom: assignedRoom,
         mapId: assignedMap,
         status: 'ACTIVE',

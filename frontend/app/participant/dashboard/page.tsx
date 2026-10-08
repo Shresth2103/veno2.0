@@ -203,7 +203,7 @@ export default function ParticipantDashboard() {
     const data = teamDataRef.current;
 
     if (data.timerPaused) return;
-    if (data.currentPosition === 150) return;
+    if (data.status === 'COMPLETED') return;
 
     setTeamData(prev => ({
       ...prev,
@@ -311,7 +311,11 @@ export default function ParticipantDashboard() {
       const getFloor = (room?: string) => {
         if (!room) return "";
         const match = room.match(/(\d)\d{2}$/);
-        return match ? (parseInt(match[1]) === 1 ? "1st" : "2nd") : "";
+        if (!match) return "";
+        const floorNum = parseInt(match[1]);
+        if (floorNum === 2) return "2nd";
+        if (floorNum === 3) return "3rd";
+        return `${floorNum}th`;
       };
       const fromFloor = getFloor(data.positionBefore ? teamData.currentRoom : "");
       const toFloor = getFloor(data.roomAssigned);
@@ -322,17 +326,25 @@ export default function ParticipantDashboard() {
         currentPosition: data.positionAfter,
         currentRoom: data.roomAssigned,
         canRollDice: false,
+        status: data.isFinalRoll ? 'COMPLETED' : prev.status,
       }))
 
       // Show dice roll result popup (even at position 150)
       toast({
         title: `🎲 Rolled: ${data.diceValue}`,
-        description: `Position ${data.positionBefore} → ${data.positionAfter}${data.hasWon ? ' 🏆 Finish Line!' : ''}${fromFloor && toFloor ? ` | ${fromFloor} → ${toFloor} Floor` : ''}`,
+        description: data.isFinalRoll
+          ? `🏆 Final Destination: ${data.roomAssigned}! Report to ${data.roomAssigned} to complete the game!`
+          : `Position ${data.positionBefore} → ${data.positionAfter}${data.hasWon ? ' 🏆 Finish Line!' : ''}${fromFloor && toFloor ? ` | ${fromFloor} → ${toFloor} Floor` : ''}`,
         variant: "default",
-        duration: data.hasWon ? 6000 : 4000,
+        duration: data.isFinalRoll ? 8000 : (data.hasWon ? 6000 : 4000),
       })
 
-      setGameStatus("PENDING_APPROVAL")
+      if (data.isFinalRoll) {
+        setGameStatus("IDLE");
+        setShowCompletionDialog(true);
+      } else {
+        setGameStatus("PENDING_APPROVAL");
+      }
 
       // Update leaderboard immediately for other teams
       await fetchTeams()
@@ -551,7 +563,7 @@ export default function ParticipantDashboard() {
           <div className="lg:col-span-2 space-y-6">
             <Dice
               onRoll={handleRoll}
-              canRoll={teamData.canRollDice && gameStatus === "IDLE" && teamData.currentPosition < 150 && teamData.status !== 'COMPLETED'}
+              canRoll={teamData.canRollDice && gameStatus === "IDLE" && teamData.status !== 'COMPLETED'}
               isRolling={gameStatus === "ROLLING"}
               lastValue={lastDiceValue}
             />
@@ -590,7 +602,7 @@ export default function ParticipantDashboard() {
           </DialogHeader>
           <div className="text-center space-y-3">
             <div className="text-xl font-semibold">Game Completed!</div>
-            <div>Team {teamData.teamId} has successfully reached position 150! Report to room AB1-010.</div>
+            <div>Team {teamData.teamId} has successfully completed the game! Report to room AB1 307.</div>
             <div className="pt-2 text-4xl">🏆</div>
           </div>
         </DialogContent>

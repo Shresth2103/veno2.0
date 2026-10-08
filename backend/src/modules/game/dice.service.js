@@ -26,7 +26,65 @@ const processDiceRoll = async (teamId) => {
     throw new Error('Team not found');
   }
 
-  // Roll the dice
+  if (team.status === 'COMPLETED') {
+    throw new Error('Team has already completed the game');
+  }
+
+  // Handle final roll after completing block 150 (Assigns end room AB1 307)
+  if (team.currentPosition === GAME_CONFIG.BOARD_SIZE) {
+    const diceValue = rollDice();
+    const finalRoom = 'AB1 307';
+
+    const diceRoll = await prisma.$transaction(async (tx) => {
+      const roll = await tx.diceRoll.create({
+        data: {
+          teamId,
+          value: diceValue,
+          positionFrom: GAME_CONFIG.BOARD_SIZE,
+          positionTo: GAME_CONFIG.BOARD_SIZE,
+          roomAssigned: finalRoom,
+        },
+      });
+
+      await tx.team.update({
+        where: { id: teamId },
+        data: {
+          currentRoom: finalRoom,
+          canRollDice: false,
+          status: 'COMPLETED',
+          timerPaused: true,
+        },
+      });
+
+      return roll;
+    });
+
+    Promise.all([
+      logDiceRoll(team.teamCode, team.teamName, diceValue, GAME_CONFIG.BOARD_SIZE, GAME_CONFIG.BOARD_SIZE),
+      logCheckpointReached(
+        team.teamCode,
+        team.teamName,
+        999,
+        GAME_CONFIG.BOARD_SIZE,
+        finalRoom,
+        false,
+        'Final roll completed! Assigned end room AB1 307'
+      )
+    ]).catch(err => console.error('Audit logging error:', err));
+
+    return {
+      diceValue,
+      positionBefore: GAME_CONFIG.BOARD_SIZE,
+      positionAfter: GAME_CONFIG.BOARD_SIZE,
+      roomAssigned: finalRoom,
+      hasWon: true,
+      isFinalRoll: true,
+      message: 'Game Completed! Report to room AB1 307.',
+      diceRoll,
+    };
+  }
+
+  // Roll the dice for regular move
   const diceValue = rollDice();
   const positionBefore = team.currentPosition;
   let positionAfter = positionBefore + diceValue;

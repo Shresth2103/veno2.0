@@ -48,24 +48,26 @@ const getRandomRoom = async (currentRoom, teamId = null, roomType = null) => {
     roomCountMap[rc.currentRoom] = rc._count.id;
   });
 
-  // Find available rooms (ALWAYS exclude current room, check capacity)
+  // Find available rooms (ALWAYS exclude current room and start/end room AB1 307, check capacity)
   const availableRooms = rooms.filter(roomData => {
     if (roomData.roomNumber === currentRoom) return false; // Never same room
+    if (roomData.roomNumber === 'AB1 307') return false; // AB1 307 is reserved for start & end only
     const count = roomCountMap[roomData.roomNumber] || 0;
     return count < roomData.capacity;
   });
 
   if (availableRooms.length === 0) {
-    // If no rooms with capacity, pick least full room on target floor
-    if (rooms.length === 0) {
+    // If no rooms with capacity, pick least full room on target floor (excluding AB1 307)
+    const candidates = rooms.filter(r => r.roomNumber !== 'AB1 307');
+    if (candidates.length === 0) {
       throw new Error(`No available rooms on floor ${targetFloor}`);
     }
     // Find least full room on target floor
-    const leastFullRoom = rooms.reduce((min, room) => {
+    const leastFullRoom = candidates.reduce((min, room) => {
       const count = roomCountMap[room.roomNumber] || 0;
       const minCount = roomCountMap[min.roomNumber] || 0;
       return count < minCount ? room : min;
-    }, rooms[0]);
+    }, candidates[0]);
     return leastFullRoom.roomNumber;
   }
 
