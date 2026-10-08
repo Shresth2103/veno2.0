@@ -11,13 +11,8 @@ const GAME_CONFIG = {
   STARTING_POSITION: 1,
 };
 
-// Room numbers for 3 floors (update as needed)
-// Example: Floor 1: AB1 128, 129, 130, 131, 105
-//          Floor 2: AB1 209, 210, 211, 217, 225
-//          Floor 3: AB1 311, 312, 319, 320
+// Room numbers for active floors (Floor 2 and Floor 3)
 const ROOMS = [
-  // Floor 1
-  'AB1 128', 'AB1 129', 'AB1 130', 'AB1 131', 'AB1 105',
   // Floor 2
   'AB1 209', 'AB1 210', 'AB1 211', 'AB1 217', 'AB1 225',
   // Floor 3

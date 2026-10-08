@@ -85,8 +85,8 @@ async function main() {
   ];
 
   const rooms = [
-    'AB1 128', 'AB1 129', 'AB1 130', 'AB1 131', 'AB1 105',
     'AB1 209', 'AB1 210', 'AB1 211', 'AB1 217', 'AB1 225',
+    'AB1 311', 'AB1 312', 'AB1 319', 'AB1 320',
   ];
 
   for (let i = 1; i <= 10; i++) {
