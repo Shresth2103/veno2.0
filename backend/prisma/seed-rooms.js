@@ -1,11 +1,4 @@
-const { PrismaClient } = require('../generated/prisma');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { Pool } = require('pg');
-require('dotenv').config();
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = require('../src/config/db');
 
 async function seedRooms() {
   console.log('🌱 Seeding rooms...');
@@ -51,11 +44,15 @@ async function seedRooms() {
   console.log(`\nTotal capacity: ${rooms.reduce((sum, r) => sum + r.capacity, 0)} teams`);
 }
 
-seedRooms()
-  .catch((e) => {
-    console.error('❌ Error seeding rooms:', e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+if (require.main === module) {
+  seedRooms()
+    .catch((e) => {
+      console.error('❌ Error seeding rooms:', e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}
+
+module.exports = seedRooms;
