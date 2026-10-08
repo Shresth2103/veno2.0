@@ -83,7 +83,7 @@ model Team {
   teamCode        String     @unique
   teamName        String
   currentPosition Int        @default(1)
-  currentRoom     String     @default("AB1 201")
+  currentRoom     String     @default("AB1 307")
   totalTimeSec    Int        @default(0)
   points          Int        @default(0)
   status          TeamStatus @default(ACTIVE)

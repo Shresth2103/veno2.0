@@ -45,13 +45,11 @@ const approveCheckpoint = async (checkpointId) => {
 
   // Check if team reached position 150 (winning position)
   if (checkpoint.positionAfter === GAME_CONFIG.BOARD_SIZE) {
-    // Mark team as COMPLETED, disable dice, and pause timer
+    // Checkpoint at position 150 approved - allow team to roll dice to receive final end room AB1 307
     await prisma.team.update({
       where: { id: checkpoint.teamId },
       data: {
-        status: 'COMPLETED',
-        canRollDice: false,
-        timerPaused: true,
+        canRollDice: true,
       },
     });
   }

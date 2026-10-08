@@ -16,13 +16,15 @@ const getRandomRoom = async (currentRoom, teamId = null, roomType = null) => {
   // Get all rooms with their capacities from database
   let rooms = await prisma.room.findMany();
 
-  // Determine current floor and pick a random different floor (out of 3)
+  // Determine unique active floors from available rooms (e.g., Floors 2 & 3)
+  const distinctFloors = [...new Set(rooms.map(r => r.floor))];
   const currentFloor = getFloorFromRoom(currentRoom);
-  const allFloors = [1, 2, 3];
-  const otherFloors = allFloors.filter(f => f !== currentFloor);
-  const targetFloor = otherFloors[Math.floor(Math.random() * otherFloors.length)];
+  const otherFloors = distinctFloors.filter(f => f !== currentFloor);
+  const targetFloor = otherFloors.length > 0
+    ? otherFloors[Math.floor(Math.random() * otherFloors.length)]
+    : (distinctFloors[0] || currentFloor);
 
-  // Filter rooms by the randomly chosen different floor
+  // Filter rooms by target floor
   rooms = rooms.filter(r => r.floor === targetFloor);
 
   // Filter by room type if specified (TECH or NON_TECH)
@@ -46,24 +48,26 @@ const getRandomRoom = async (currentRoom, teamId = null, roomType = null) => {
     roomCountMap[rc.currentRoom] = rc._count.id;
   });
 
-  // Find available rooms (ALWAYS exclude current room, check capacity)
+  // Find available rooms (ALWAYS exclude current room and start/end room AB1 307, check capacity)
   const availableRooms = rooms.filter(roomData => {
     if (roomData.roomNumber === currentRoom) return false; // Never same room
+    if (roomData.roomNumber === 'AB1 307') return false; // AB1 307 is reserved for start & end only
     const count = roomCountMap[roomData.roomNumber] || 0;
     return count < roomData.capacity;
   });
 
   if (availableRooms.length === 0) {
-    // If no rooms with capacity, pick least full room on target floor
-    if (rooms.length === 0) {
+    // If no rooms with capacity, pick least full room on target floor (excluding AB1 307)
+    const candidates = rooms.filter(r => r.roomNumber !== 'AB1 307');
+    if (candidates.length === 0) {
       throw new Error(`No available rooms on floor ${targetFloor}`);
     }
     // Find least full room on target floor
-    const leastFullRoom = rooms.reduce((min, room) => {
+    const leastFullRoom = candidates.reduce((min, room) => {
       const count = roomCountMap[room.roomNumber] || 0;
       const minCount = roomCountMap[min.roomNumber] || 0;
       return count < minCount ? room : min;
-    }, rooms[0]);
+    }, candidates[0]);
     return leastFullRoom.roomNumber;
   }
 

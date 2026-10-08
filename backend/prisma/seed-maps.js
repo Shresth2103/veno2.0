@@ -1,11 +1,4 @@
-const {PrismaClient} = require('../generated/prisma');
-const {PrismaPg} = require('@prisma/adapter-pg');
-const {Pool} = require('pg');
-require('dotenv').config();
-
-const pool = new Pool({connectionString: process.env.DATABASE_URL});
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({adapter});
+const prisma = require('../src/config/db');
 
 const BOARD_MAPS = [
   {
@@ -61,23 +54,20 @@ const BOARD_MAPS = [
 ];
 
 async function seedBoardMaps() {
-  console.log('Starting board maps seed...\n');
+  console.log('🌱 Starting board maps seed...\n');
 
-  // Clear existing board rules and maps
-  await prisma.boardRule.deleteMany({});
-  await prisma.boardMap.deleteMany({});
-  console.log('Cleared existing board maps and rules\n');
-
-  // Create each board map with its snakes and ladders
+  // Create or update each board map with its snakes and ladders
   for (const mapData of BOARD_MAPS) {
-    const map = await prisma.boardMap.create({
-      data: {
+    const map = await prisma.boardMap.upsert({
+      where: { name: mapData.name },
+      update: { isActive: true },
+      create: {
         name: mapData.name,
         isActive: true,
       },
     });
 
-    console.log(`Created ${mapData.name} (ID: ${map.id})`);
+    console.log(`Configured ${mapData.name} (ID: ${map.id})`);
 
     // Build rules: snakes (no endPos) + ladders (with endPos)
     const rules = [
@@ -85,6 +75,7 @@ async function seedBoardMaps() {
         mapId: map.id,
         type: 'SNAKE',
         startPos: pos,
+        endPos: null,
       })),
       ...mapData.ladders.map(l => ({
         mapId: map.id,
@@ -94,7 +85,10 @@ async function seedBoardMaps() {
       })),
     ];
 
-    await prisma.boardRule.createMany({ data: rules });
+    await prisma.boardRule.createMany({
+      data: rules,
+      skipDuplicates: true,
+    });
 
     console.log(`   Snakes: ${mapData.snakes.length} positions`);
     console.log(`   Ladders: ${mapData.ladders.length} (${mapData.ladders.map(l => `${l.start}->${l.end}`).join(', ')})`);
@@ -118,4 +112,8 @@ async function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = seedBoardMaps;
