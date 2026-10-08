@@ -6,10 +6,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  output: 'standalone',
-  experimental: {
-    webpackBuildWorker: true,
-  },
+  trailingSlash: true,
 }
 
 export default nextConfig
